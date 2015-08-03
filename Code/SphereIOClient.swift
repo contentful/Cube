@@ -65,7 +65,7 @@ public struct Address {
         self.country = country
     }
 
-    func toDictionary() -> [String:String] {
+    public func toDictionary() -> [String:String] {
         var dictionary = [String:String]()
         let mirror = reflect(self)
 
