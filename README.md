@@ -18,8 +18,8 @@ use_frameworks!
 pod 'Cube'
 ```
 
-Note: make sure you use version [0.37][5] or newer. Cube is written in Swift 1.2,
-so it requires Xcode 6.3 or newer as well.
+Note: make sure you use version [0.38.2][5] or newer. Cube is written in Swift 2.0,
+so it requires Xcode 7.0 or newer as well.
 
 ## License
 
