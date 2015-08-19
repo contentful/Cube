@@ -1,8 +1,13 @@
-#!/usr/bin/env cato 1.2
+#!/usr/bin/env cato 2.0
 
 /*
 	A script for syncing data between Sphere.IO and Contentful.
  */
+
+let ContentfulContentTypeId = "F94etMpd2SsI2eSq4QsiG"
+let ContentfulSphereIOFieldId = "nJpobh9I3Yle0lnN"
+let ContentfulSpaceId = "jx9s8zvjjls9"
+let SphereIOProject = "ecomhack-demo-67"
 
 import AFNetworking
 import Alamofire
@@ -10,20 +15,40 @@ import AppKit
 import Chores
 import ContentfulDeliveryAPI
 import ContentfulManagementAPI
+import Cube // Note: has to be added manually as a development Pod
 import ISO8601DateFormatter
 import Result
-import SphereIO // Note: has to be added manually as a development Pod
+
+func env(variable: String) -> String {
+    return NSProcessInfo.processInfo().environment[variable] ?? ""
+}
+
+func key(name: String, project: String = "WatchButton") -> String {
+    return (>["pod", "keys", "get", name, project]).stdout
+}
 
 NSApplicationLoad()
 
-let contentfulToken = NSProcessInfo.processInfo().environment["CONTENTFUL_MANAGEMENT_API_ACCESS_TOKEN"] as! String
+let contentfulToken = env("CONTENTFUL_MANAGEMENT_API_ACCESS_TOKEN")
 let contentfulClient = CMAClient(accessToken: contentfulToken)
 
-let clientId = (>["pod", "keys", "get", "SphereIOClientId"]).stderr
-let clientSecret = (>["pod", "keys", "get", "SphereIOClientSecret"]).stderr
+var clientId = env("SPHERE_IO_CLIENT_ID")
+if clientId == "" {
+    clientId = key("SphereIOClientId")
+}
 
-let project = "ecomhack-demo-67"
-let sphereClient = SphereIOClient(clientId: clientId, clientSecret: clientSecret, project: project)
+var clientSecret = env("SPHERE_IO_CLIENT_SECRET")
+if clientSecret == "" {
+    clientSecret = key("SphereIOClientSecret")
+}
+
+if clientId == "" || clientSecret == "" {
+    print("Missing commercetools credentials, please refer to the README.")
+    exit(1)
+}
+
+let sphereClient = SphereIOClient(clientId: clientId,
+        clientSecret: clientSecret, project: SphereIOProject)
 
 extension String {
     var floatValue: Float {
@@ -31,38 +56,62 @@ extension String {
     }
 }
 
-func createEntry(space: CMASpace, type: CMAContentType, product: Product) {
+func createEntry(space: CMASpace, type: CMAContentType, product: Product, exitAfter: Bool = false) {
     let fields: [NSObject : AnyObject] = [
-        "nJpobh9I3Yle0lnN": [ "en-US": product.identifier ],
+        ContentfulSphereIOFieldId: [ "en-US": product.identifier ],
         "name": [ "en-US": product.name ],
         "productDescription": [ "en-US": product.productDescription ],
         "price": [ "en-US": (product.price["amount"]!).floatValue ],
     ]
 
     space.createEntryOfContentType(type, withFields: fields, success: { (_, entry) in
-        println(entry)
-    }) { (_, error) in println(error) }
+        print(entry)
+
+        if (exitAfter) {
+            exit(0)
+        }
+    }) { (_, error) in 
+        print(error)
+
+        if (exitAfter) {
+            exit(1)
+        }
+    }
 }
 
 func handleSpace(space: CMASpace, products: [Product]) {
-    space.fetchContentTypeWithIdentifier("F94etMpd2SsI2eSq4QsiG", success: { (_, type) in
-        println(type)
-
-        for (index, product) in enumerate(products) {
-            createEntry(space, type, product)
+    space.fetchEntriesMatching(["content_type": ContentfulContentTypeId], success: { (_, entries) in 
+        let importedProductIds = entries.items.map() { 
+            $0.fields[ContentfulSphereIOFieldId] as! String
         }
-    }) { (_, error) in println(error) }
+
+        space.fetchContentTypeWithIdentifier(ContentfulContentTypeId, success: { (_, type) in
+            for (index, product) in products.enumerate() {
+                let exitAfter = (index + 1) == products.count
+
+                if importedProductIds.contains(product.identifier) {
+                    if exitAfter {
+                        exit(0)
+                    }
+
+                    continue
+                }
+
+                createEntry(space, type: type, product: product, exitAfter: exitAfter)
+            }
+        }) { (_, error) in print(error) }
+    }) { (_, error) in print(error) }
 }
 
 sphereClient.fetchProductData() { (result) in
 	if let value = result.value, results = value["results"] as? [[String:AnyObject]] {
 		let products = results.map { (res) in Product(res) }
 
-        contentfulClient.fetchSpaceWithIdentifier("jx9s8zvjjls9", success: { (_, space) in
-            handleSpace(space, products)
-        }) { (_, error) in println(error) }
+        contentfulClient.fetchSpaceWithIdentifier(ContentfulSpaceId, success: { (_, space) in
+            handleSpace(space, products: products)
+        }) { (_, error) in print(error) }
 	} else {
-		fatalError("Failed to retrieve products from Sphere.IO")
+		fatalError("Failed to retrieve products from commercetools.")
 	}
 }
 
