@@ -1,0 +1,7 @@
+plugin 'cocoapods-keys', {
+  :project => 'WatchButton',
+  :keys => [
+    'SphereIOClientId',
+    'SphereIOClientSecret'
+]}
+
