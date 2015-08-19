@@ -8,10 +8,11 @@ Pod::Spec.new do |s|
   s.source       = { :git => "https://github.com/contentful-labs/Cube.git", :tag => s.version }
 
   s.requires_arc = true
-  s.source_files = "Code/{Product.swift,SphereIOClient.swift}"
+  s.source_files = "Code/*.swift"
 
   s.ios.deployment_target = "8.0"
   s.osx.deployment_target = "10.10"
+  s.watchos.deployment_target = "2.0"
 
   s.dependency 'Alamofire'
   s.dependency 'Result'

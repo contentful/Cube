@@ -9,7 +9,7 @@
 import Foundation
 
 // Little bit evil model object, because it tends to fatalError() :-)
-public struct Product: Printable {
+public struct Product: CustomStringConvertible {
     private let LANG = "de"
     let data: [String:AnyObject]
 

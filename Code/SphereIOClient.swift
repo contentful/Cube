@@ -8,7 +8,6 @@
 
 import Alamofire
 import Foundation
-import Result
 
 private extension Int {
     func toNumber() -> NSNumber {
@@ -22,7 +21,7 @@ private struct AuthRequest: URLRequestConvertible {
     private let clientSecret: String
     private let project: String
 
-    var URLRequest: NSURLRequest {
+    var URLRequest: NSMutableURLRequest {
         if let URL = NSURL(string: "https://auth.sphere.io/oauth/token") {
             let URLRequest = NSMutableURLRequest(URL: URL)
             URLRequest.HTTPMethod = Method.POST.rawValue
@@ -41,9 +40,7 @@ private struct AuthRequest: URLRequestConvertible {
     }
 }
 
-private typealias OAuthResult = Result<String, NSError>
 private typealias OAuthClosure = (result: OAuthResult) -> Void
-public typealias SphereResult = Result<[String:AnyObject], NSError>
 public typealias SphereClosure = (result: SphereResult) -> Void
 
 public struct Address {
@@ -65,15 +62,13 @@ public struct Address {
         self.country = country
     }
 
-    func toDictionary() -> [String:String] {
+    public func toDictionary() -> [String:String] {
         var dictionary = [String:String]()
-        let mirror = reflect(self)
+        let mirror = Mirror(reflecting: self)
 
-        for index in 0 ..< mirror.count {
-            let (childKey, childMirror) = mirror[index]
-
-            if let value = childMirror.value as? String {
-                dictionary[childKey] = value
+        for child in mirror.children {
+            if let label = child.label, value = child.value as? String {
+                dictionary[label] = value
             }
         }
 
@@ -104,13 +99,13 @@ public class SphereIOClient {
 
     private func getToken(completion: OAuthClosure) {
         Alamofire.request(AuthRequest(clientId: clientId, clientSecret: clientSecret, project: project))
-            .responseJSON { (_, _, JSON, error) in
-                if let json = JSON as? [String:AnyObject], token = json["access_token"] as? String {
+            .responseJSON { (_, _, result) in
+                if let json = result.value as? [String:AnyObject], token = json["access_token"] as? String {
                     completion(result: OAuthResult(value: token))
                     return
                 }
 
-                if let error = error {
+                if let error = result.error {
                     completion(result: OAuthResult(error: error))
                     return
                 }
@@ -124,18 +119,18 @@ public class SphereIOClient {
             return
         }
 
-        Alamofire.request(sphereRequest(endpoint, method, parameters)).responseJSON { (_, _, JSON, error) in
-            self.sphereCompletion(completion, JSON, error)
+        Alamofire.request(sphereRequest(endpoint, method, parameters)).responseJSON { (_, _, result) in
+            self.sphereCompletion(completion, result)
         }
     }
 
-    private func sphereCompletion(completion: SphereClosure, _ JSON: AnyObject?, _ error: NSError?) {
-        if let json = JSON as? [String:AnyObject] {
+    private func sphereCompletion(completion: SphereClosure, _ result: Result<AnyObject>) {
+        if let json = result.value as? [String:AnyObject] {
             completion(result: SphereResult(value: json))
             return
         }
 
-        if let error = error {
+        if let error = result.error {
             completion(result: SphereResult(error: error))
             return
         }
@@ -250,7 +245,7 @@ public class SphereIOClient {
         performAuthenticatedRequest(completion, "\(project)/orders/\(orderId)")
     }
 
-    public func quickOrder(# product: [String:AnyObject], to address: Address, _ completion: SphereClosure) {
+    public func quickOrder(product  product: [String:AnyObject], to address: Address, _ completion: SphereClosure) {
         let currency = address.country == "DE" ? "EUR" : "USD"
 
         createCart(currency) { (result) in
