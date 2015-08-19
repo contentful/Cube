@@ -57,26 +57,33 @@ extension String {
 }
 
 func createEntry(space: CMASpace, type: CMAContentType, product: Product, exitAfter: Bool = false) {
-    let fields: [NSObject : AnyObject] = [
+    var fields: [NSObject : AnyObject] = [
         ContentfulSphereIOFieldId: [ "en-US": product.identifier ],
         "name": [ "en-US": product.name ],
         "productDescription": [ "en-US": product.productDescription ],
         "price": [ "en-US": (product.price["amount"]!).floatValue ],
     ]
 
-    space.createEntryOfContentType(type, withFields: fields, success: { (_, entry) in
-        print(entry)
+    space.createAssetWithTitle([ "en-US": product.name ],
+            description: [ "en-US": product.productDescription ],
+            fileToUpload: [ "en-US": product.imageUrl ], success: { (_, asset) in
+        asset.processWithSuccess(nil, failure: nil)
+        fields["productImage"] = [ "en-US": asset ]
 
-        if (exitAfter) {
-            exit(0)
-        }
-    }) { (_, error) in 
-        print(error)
+        space.createEntryOfContentType(type, withFields: fields, success: { (_, entry) in
+            print(entry)
 
-        if (exitAfter) {
-            exit(1)
+            if (exitAfter) {
+                exit(0)
+            }
+        }) { (_, error) in
+            print(error)
+
+            if (exitAfter) {
+                exit(1)
+            }
         }
-    }
+    }) { (_, error) in print(error) }
 }
 
 func handleSpace(space: CMASpace, products: [Product]) {
