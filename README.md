@@ -59,7 +59,7 @@ pod "Chores", :git => 'https://github.com/neonichu/Chores.git', :branch => 'swif
 pod "ContentfulManagementAPI"
 
 pod "Cube", :git => 'https://github.com/contentful-labs/Cube.git', :branch => 'swift-2.0'
-pod 'Alamofire', :git => 'https://github.com/neonichu/Alamofire.git', :branch => 'swift-2.0'
+pod 'Alamofire', :git => 'https://github.com/alamofire/Alamofire.git', :branch => 'swift-2.0'
 pod 'Result', '>= 0.6-beta.1'
 ```
 3. Run `pod install --no-integrate`
