@@ -55,12 +55,14 @@ Since Swift 2 is currently in beta, you will need to manually perform the follow
 platform :osx, '10.10'
 plugin 'cocoapods-rome'
 use_frameworks!
-pod "Chores", :git => 'https://github.com/neonichu/Chores.git', :branch => 'swift-2.0'
+pod "AFNetworking"
+pod "Alamofire"
+pod "Chores"
+pod "ContentfulDeliveryAPI"
 pod "ContentfulManagementAPI"
-
-pod "Cube", :git => 'https://github.com/contentful-labs/Cube.git', :branch => 'swift-2.0'
-pod 'Alamofire', :git => 'https://github.com/neonichu/Alamofire.git', :branch => 'swift-2.0'
-pod 'Result', '>= 0.6-beta.1'
+pod "Cube", :path => "/Users/boris/Projects/Cube"
+pod "ISO8601DateFormatter"
+pod "Result"
 ```
 3. Run `pod install --no-integrate`
 

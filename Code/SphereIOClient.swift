@@ -105,7 +105,7 @@ public class SphereIOClient {
                     return
                 }
 
-                if let error = result.error {
+                if let error = result.error as? NSError {
                     completion(result: OAuthResult(error: error))
                     return
                 }
@@ -130,7 +130,7 @@ public class SphereIOClient {
             return
         }
 
-        if let error = result.error {
+        if let error = result.error as? NSError {
             completion(result: SphereResult(error: error))
             return
         }

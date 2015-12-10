@@ -1,4 +1,4 @@
-#!/usr/bin/env cato 2.0
+#!/usr/bin/env cato 2.1
 
 /*
 	A script for syncing data between Sphere.IO and Contentful.
